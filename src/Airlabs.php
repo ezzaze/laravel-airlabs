@@ -15,13 +15,13 @@ class Airlabs
         self::$endpoint = __FUNCTION__;
 
         $client = new Client([
-            'base_uri' => self::getBaseUrl()
+            'base_uri' => self::getBaseUrl(),
         ]);
 
         try {
             $result = $client->request('GET', self::$endpoint, [
                 'headers' => [
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
                 ],
                 'query' => [
                     'api_key' => config('airlabs.api_key'),
@@ -39,6 +39,7 @@ class Airlabs
     protected static function getBaseUrl()
     {
         $version = self::getVersion();
+
         return "https://airlabs.co/api/{$version}/";
     }
 
