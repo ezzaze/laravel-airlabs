@@ -2,9 +2,9 @@
 
 namespace Ezzaze\Airlabs;
 
+use Ezzaze\Airlabs\Commands\AirlabsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Ezzaze\Airlabs\Commands\AirlabsCommand;
 
 class AirlabsServiceProvider extends PackageServiceProvider
 {
