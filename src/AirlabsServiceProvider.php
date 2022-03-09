@@ -17,9 +17,14 @@ class AirlabsServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('airlabs')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_airlabs_table')
-            ->hasCommand(AirlabsCommand::class);
+            ->hasConfigFile();
+        // ->hasViews()
+        // ->hasMigration('create_airlabs_table')
+        // ->hasCommand(AirlabsCommand::class);
+    }
+
+    public function packageBooted()
+    {
+        $this->app->singleton(Airlabs::class, fn () => new Airlabs());
     }
 }
