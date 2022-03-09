@@ -2,9 +2,9 @@
 
 namespace Ezzaze\Airlabs\Tests;
 
+use Ezzaze\Airlabs\AirlabsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Ezzaze\Airlabs\AirlabsServiceProvider;
 
 class TestCase extends Orchestra
 {
