@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Ezzaze\Airlabs\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class AirlabsCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'airlabs';
 
     public $description = 'My command';
 

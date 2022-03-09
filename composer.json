@@ -1,17 +1,17 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "ezzaze/airlabs",
+    "description": "A PHP wrapper around the API of airlabs.co",
     "keywords": [
-        ":vendor_name",
+        "ezzaze",
         "laravel",
-        ":package_slug"
+        "airlabs"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/ezzaze/airlabs",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Marwane Ezzaze",
+            "email": "me@ezzaze.com",
             "role": "Developer"
         }
     ],
@@ -34,13 +34,13 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories"
+            "Ezzaze\\Airlabs\\": "src",
+            "Ezzaze\\Airlabs\\Database\\Factories\\": "database/factories"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests"
+            "Ezzaze\\Airlabs\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -54,10 +54,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "Ezzaze\\Airlabs\\AirlabsServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "Airlabs": "Ezzaze\\Airlabs\\Facades\\Airlabs"
             }
         }
     },
