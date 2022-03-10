@@ -19,13 +19,13 @@ class Airlabs
     public function airports(array $params = [])
     {
         $client = new Client([
-            'base_uri' => self::getBaseUrl()
+            'base_uri' => self::getBaseUrl(),
         ]);
 
         try {
             $result = $client->request('GET', __FUNCTION__, [
                 'headers' => [
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
                 ],
                 'query' => [
                     'api_key' => config('airlabs.api_key'),
@@ -43,6 +43,7 @@ class Airlabs
     protected function getBaseUrl()
     {
         $version = self::getVersion();
+
         return "https://airlabs.co/api/{$version}/";
     }
 
