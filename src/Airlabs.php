@@ -8,18 +8,22 @@ use Illuminate\Http\Response;
 
 class Airlabs
 {
-    protected static string $endpoint;
+    protected string $endpoint;
+    protected string $base_url;
 
-    public static function airports(array $params = [])
+    function __construct()
     {
-        self::$endpoint = __FUNCTION__;
+        $this->base_url = $this->getBaseUrl();
+    }
 
+    public function airports(array $params = [])
+    {
         $client = new Client([
             'base_uri' => self::getBaseUrl()
         ]);
 
         try {
-            $result = $client->request('GET', self::$endpoint, [
+            $result = $client->request('GET', __FUNCTION__, [
                 'headers' => [
                     'Accept' => 'application/json'
                 ],
@@ -36,13 +40,13 @@ class Airlabs
         }
     }
 
-    protected static function getBaseUrl()
+    protected function getBaseUrl()
     {
         $version = self::getVersion();
         return "https://airlabs.co/api/{$version}/";
     }
 
-    protected static function getVersion()
+    protected function getVersion()
     {
         return "v" . env('airlabs.version');
     }
