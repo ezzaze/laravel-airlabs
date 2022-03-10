@@ -11,7 +11,7 @@ class Airlabs
     protected string $endpoint;
     protected string $base_url;
 
-    function __construct()
+    public function __construct()
     {
         $this->base_url = $this->getBaseUrl();
     }
