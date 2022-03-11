@@ -26,6 +26,7 @@ class Airlabs
     public function airports()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -37,6 +38,7 @@ class Airlabs
     public function schedules()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -48,6 +50,7 @@ class Airlabs
     public function airlines()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -59,6 +62,7 @@ class Airlabs
     public function cities()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -70,6 +74,7 @@ class Airlabs
     public function fleets()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -81,6 +86,7 @@ class Airlabs
     public function routes()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -92,6 +98,7 @@ class Airlabs
     public function timezones()
     {
         $this->endpoint = __FUNCTION__;
+
         return $this;
     }
 
@@ -104,11 +111,12 @@ class Airlabs
     public function withQuery(array $attributes = [])
     {
         $this->queryAttributes = $attributes;
+
         return $this;
     }
 
     /**
-     * get the results of the 
+     * get the results of the
      *
      * @return void
      */
@@ -117,6 +125,7 @@ class Airlabs
         $client = new Client([
             'base_uri' => self::getBaseUrl(),
         ]);
+
         try {
             $res = $client->request('GET', $this->endpoint, [
                 'headers' => [
@@ -124,7 +133,7 @@ class Airlabs
                 ],
                 'query' => [
                     'api_key' => config('airlabs.api_key'),
-                    ...$this->queryAttributes
+                    ...$this->queryAttributes,
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
@@ -145,6 +154,7 @@ class Airlabs
     protected function getBaseUrl(): string
     {
         $version = self::getVersion();
+
         return "https://airlabs.co/api/{$version}/";
     }
 
