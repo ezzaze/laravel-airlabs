@@ -13,7 +13,7 @@ class Airlabs
     protected string $base_url;
     protected array $queryAttributes = [];
 
-    function __construct()
+    public function __construct()
     {
         $this->base_url = $this->getBaseUrl();
     }
