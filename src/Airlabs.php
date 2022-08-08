@@ -4,13 +4,15 @@ namespace Ezzaze\Airlabs;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Http\Response;
+use Illuminate\Http\{Response, JsonResponse};
+use Illuminate\Support\Facades\Cache;
 use Nette\Utils\Json;
 
 class Airlabs
 {
     protected string $endpoint;
     protected string $base_url;
+    protected string $result;
     protected array $queryAttributes = [];
 
     public function __construct()
@@ -18,110 +20,24 @@ class Airlabs
         $this->base_url = $this->getBaseUrl();
     }
 
-    /**
-     * query to retrieve the list of airports
-     *
-     * @return self
-     */
-    public function airports()
+    public function __call($name, $arguments = [])
     {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
+        $this->endpoint = $name;
+        $this->queryAttributes = $arguments;
+        return $this->getData();
     }
 
     /**
-     * query to retrieve the list of flight schedules
-     *
-     * @return self
-     */
-    public function schedules()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of airlines
-     *
-     * @return self
-     */
-    public function airlines()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of cities
-     *
-     * @return self
-     */
-    public function cities()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of fleets
-     *
-     * @return self
-     */
-    public function fleets()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of routes
-     *
-     * @return self
-     */
-    public function routes()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of timezones
-     *
-     * @return self
-     */
-    public function timezones()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * set query params to fetch data
-     *
-     * @param  array $attributes
-     * @return self
-     */
-    public function withQuery(array $attributes = [])
-    {
-        $this->queryAttributes = $attributes;
-
-        return $this;
-    }
-
-    /**
-     * get the results of the
+     * get the results of the api call
      *
      * @return void
      */
-    public function get()
+    private function getData(): array|JsonResponse
     {
+        if ($content = Cache::get("airlabs.{$this->endpoint}")) {
+            return $this->formatResult($content);
+        }
+
         $client = new Client([
             'base_uri' => self::getBaseUrl(),
         ]);
@@ -137,8 +53,11 @@ class Airlabs
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
-            //TODO: throw custom exception in case of an error with status 200
-            return $content->response ?: $content->error->message;
+            if (!isset($content->error)) {
+                Cache::put("airlabs.{$this->endpoint}", $content->response, config('airlabs.cache.lifetime'));
+                return $content->response;
+            }
+            return $content->error?->message;
         } catch (GuzzleException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
@@ -165,6 +84,21 @@ class Airlabs
      */
     protected function getVersion(): string
     {
-        return "v" . config('airlabs.version');
+        return config('airlabs.version');
+    }
+
+    /**
+     * Format the result of the api
+     *
+     * @param  array $result
+     * @return array
+     */
+    private function formatResult(array $result): array
+    {
+        $collection = collect($result);
+        foreach (collect($this->queryAttributes)->collapse() as $name => $value) {
+            $collection = $collection->where($name, $value);
+        }
+        return $collection->values()->all();
     }
 }
