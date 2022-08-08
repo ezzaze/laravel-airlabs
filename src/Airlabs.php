@@ -4,7 +4,7 @@ namespace Ezzaze\Airlabs;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Http\{Response, JsonResponse};
+use Illuminate\Http\{JsonResponse, Response};
 use Illuminate\Support\Facades\Cache;
 use Nette\Utils\Json;
 
@@ -24,6 +24,7 @@ class Airlabs
     {
         $this->endpoint = $name;
         $this->queryAttributes = $arguments;
+
         return $this->getData();
     }
 
@@ -53,10 +54,12 @@ class Airlabs
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
-            if (!isset($content->error)) {
+            if (! isset($content->error)) {
                 Cache::put("airlabs.{$this->endpoint}", $content->response, config('airlabs.cache.lifetime'));
+
                 return $content->response;
             }
+
             return $content->error?->message;
         } catch (GuzzleException $e) {
             return response()->json([
@@ -99,6 +102,7 @@ class Airlabs
         foreach (collect($this->queryAttributes)->collapse() as $name => $value) {
             $collection = $collection->where($name, $value);
         }
+
         return $collection->values()->all();
     }
 }
