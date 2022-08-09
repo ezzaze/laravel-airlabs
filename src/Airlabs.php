@@ -64,7 +64,7 @@ class Airlabs
                 return $this->output;
             }
 
-            return $content->error?->message;
+            return optional($content->error)->message;
         } catch (GuzzleException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
