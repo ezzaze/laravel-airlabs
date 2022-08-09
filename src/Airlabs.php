@@ -14,6 +14,7 @@ class Airlabs
     protected string $base_url;
     protected string $result;
     protected array $queryAttributes = [];
+    protected array $output = [];
 
     public function __construct()
     {
@@ -34,8 +35,10 @@ class Airlabs
      */
     private function getData(): array|JsonResponse
     {
-        if ($content = Cache::get("airlabs.{$this->endpoint}")) {
-            return $this->formatResult($content);
+        if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
+            if ($content = Cache::get("airlabs.{$this->endpoint}")) {
+                return $this->formatResult($content);
+            }
         }
 
         $client = new Client([
@@ -54,7 +57,8 @@ class Airlabs
             ]);
             $content = Json::decode($res->getBody()->getContents());
             if (!isset($content->error)) {
-                Cache::put("airlabs.{$this->endpoint}", $content->response, config('airlabs.cache.lifetime'));
+                $this->output = $content->response;
+                $this->handleCache();
                 return $content->response;
             }
             return $content->error?->message;
@@ -100,5 +104,12 @@ class Airlabs
             $collection = $collection->where($name, $value);
         }
         return $collection->values()->all();
+    }
+
+    private function handleCache()
+    {
+        if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
+            Cache::put("airlabs.{$this->endpoint}", $this->output, config('airlabs.cache.lifetime'));
+        }
     }
 }

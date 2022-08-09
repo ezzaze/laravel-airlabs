@@ -43,6 +43,12 @@ This is the contents of the published config file:
 
 ```php
 return [
+    'api_key' => env('AIRLABS_API_KEY', ''),
+    'version' => env('AIRLABS_API_VERSION', 'v9'),
+    'cache' => [
+        'enabled' => env('AIRLABS_API_CACHE_ENABLED', false),
+        'lifetime' => env('AIRLABS_API_CACHE_LIFETIME', null)
+    ]
 ];
 ```
 
@@ -56,7 +62,9 @@ php artisan vendor:publish --tag="airlabs-views"
 
 ```php
 $airlabs = new Ezzaze\Airlabs();
-echo $airlabs->echoPhrase('Hello, Ezzaze!');
+$airports = $airlabs->airports();
+
+$usaCities = $airlabs->cities(['country_code', 'US']);
 ```
 
 ## Testing
