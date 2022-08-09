@@ -57,9 +57,10 @@ class Airlabs
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
-            if (!isset($content->error)) {
+            if (! isset($content->error)) {
                 $this->output = $content->response;
                 $this->handleCache();
+
                 return $content->response;
             }
 
