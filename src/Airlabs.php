@@ -32,7 +32,7 @@ class Airlabs
     /**
      * get the results of the api call
      *
-     * @return void
+     * @return array|JsonResponse
      */
     private function getData(): array|JsonResponse
     {
@@ -57,11 +57,11 @@ class Airlabs
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
-            if (! isset($content->error)) {
+            if (!isset($content->error)) {
                 $this->output = $content->response;
                 $this->handleCache();
 
-                return $content->response;
+                return $this->output;
             }
 
             return $content->error?->message;
@@ -110,7 +110,12 @@ class Airlabs
         return $collection->values()->all();
     }
 
-    private function handleCache()
+    /**
+     * Handle the caching of the api results if enabled
+     *
+     * @return void
+     */
+    private function handleCache(): void
     {
         if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
             Cache::put("airlabs.{$this->endpoint}", $this->output, config('airlabs.cache.lifetime'));
