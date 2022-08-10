@@ -17,6 +17,7 @@ class Airlabs
     protected string $result;
     protected array $queryAttributes = [];
     protected array $output = [];
+    protected bool $verifyPeer = true;
 
     public function __construct()
     {
@@ -50,6 +51,7 @@ class Airlabs
 
             try {
                 $res = $this->client->request('GET', $this->endpoint, [
+                    'verify' => $this->verifyPeer,
                     'headers' => [
                         'Accept' => 'application/json',
                     ],
@@ -59,15 +61,13 @@ class Airlabs
                     ],
                 ]);
                 $content = Json::decode($res->getBody()->getContents());
-                if (isset($content->error)) {
-                    $errorCode = $content->error->code ?? null;
-
-                    throw AirlabsException::writeError($errorCode);
+                if (isset($content->response)) {
+                    $this->output = $content->response;
+                    $this->handleCache();
+                    return $this->output;
                 }
-                $this->output = $content->response;
-                $this->handleCache();
 
-                return $this->output;
+                throw AirlabsException::writeError($content->error);
             } catch (GuzzleException $e) {
                 return response()->json([
                     'error' => $e->getMessage(),
@@ -136,22 +136,38 @@ class Airlabs
      */
     public function ping(): bool
     {
-        $res = $this->client->request('GET', __FUNCTION__, [
-            'headers' => [
-                'Accept' => 'application/json',
-            ],
-            'query' => [
-                'api_key' => config('airlabs.api_key'),
-                ...$this->queryAttributes,
-            ],
-        ]);
-        $content = Json::decode($res->getBody()->getContents());
-        if (isset($content->error)) {
-            $errorCode = $content->error->code ?? null;
+        try {
+            $res = $this->client->request('GET', __FUNCTION__, [
+                'verify' => $this->verifyPeer,
+                'headers' => [
+                    'Accept' => 'application/json',
+                ],
+                'query' => [
+                    'api_key' => config('airlabs.api_key'),
+                    ...$this->queryAttributes,
+                ],
+            ]);
+            $content = Json::decode($res->getBody()->getContents());
+            if (isset($content->response)) {
+                return true;
+            }
 
-            throw AirlabsException::writeError($errorCode);
+            throw AirlabsException::writeError($content->error);
+        } catch (GuzzleException $e) {
+            return false;
         }
+    }
 
-        return true;
+    /**
+     * Set if SSL verification of the peer is necessary or not (this is insecure)
+     *
+     * @param  bool $value
+     * @return self
+     */
+    public function verifyPeer(bool $value = true): self
+    {
+        $this->verifyPeer = $value;
+
+        return $this;
     }
 }

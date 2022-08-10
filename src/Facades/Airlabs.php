@@ -11,6 +11,6 @@ class Airlabs extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return 'airlabs';
+        return 'Airlabs';
     }
 }

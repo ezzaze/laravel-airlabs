@@ -6,9 +6,9 @@ use Exception;
 
 final class AirlabsException extends Exception
 {
-    public static function writeError(string $errorCode): self
+    public static function writeError(object $error): self
     {
-        $message = match ($errorCode) {
+        $message = match ($error->code) {
             'unknown_api_key' => 'Provided API Key is invalid.',
             'expired_api_key' => 'The provided API key has expired.',
             'unknown_method' => 'Provided method is not supported.',
