@@ -74,6 +74,7 @@ class Airlabs
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
         }
+
         return [];
     }
 
