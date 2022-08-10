@@ -10,4 +10,3 @@ it('can ping remote api', function () {
     $result = Airlabs::verifyPeer(false)->ping();
     expect($result)->toBeTrue();
 });
-

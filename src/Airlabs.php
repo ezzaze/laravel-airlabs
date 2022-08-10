@@ -64,6 +64,7 @@ class Airlabs
                 if (isset($content->response)) {
                     $this->output = $content->response;
                     $this->handleCache();
+
                     return $this->output;
                 }
 
