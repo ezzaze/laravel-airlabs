@@ -2,6 +2,7 @@
 
 namespace Ezzaze\Airlabs;
 
+use Ezzaze\Airlabs\Exceptions\AirlabsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\{JsonResponse, Response};
@@ -33,6 +34,7 @@ class Airlabs
      * get the results of the api call
      *
      * @return array|JsonResponse
+     * @throws AirlabsException
      */
     private function getData(): array|JsonResponse
     {
@@ -57,14 +59,13 @@ class Airlabs
                 ],
             ]);
             $content = Json::decode($res->getBody()->getContents());
-            if (! isset($content->error)) {
-                $this->output = $content->response;
-                $this->handleCache();
-
-                return $this->output;
+            if (isset($content->error)) {
+                throw new AirlabsException($content->error->code ?? null);
             }
+            $this->output = $content->response;
+            $this->handleCache();
 
-            return optional($content->error)->message;
+            return $this->output;
         } catch (GuzzleException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
