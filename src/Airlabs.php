@@ -19,7 +19,9 @@ class Airlabs
 
     public function __construct()
     {
-        $this->base_url = $this->getBaseUrl();
+        $this->client = new Client([
+            'base_uri' => $this->getBaseUrl(),
+        ]);
     }
 
     public function __call($name, $arguments = [])
@@ -38,38 +40,37 @@ class Airlabs
      */
     private function getData(): array|JsonResponse
     {
-        if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
-            if ($content = Cache::get("airlabs.{$this->endpoint}")) {
-                return $this->formatResult($content);
+        if ($this->ping()) {
+            if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
+                if ($content = Cache::get("airlabs.{$this->endpoint}")) {
+                    return $this->formatResult($content);
+                }
             }
-        }
 
-        $client = new Client([
-            'base_uri' => self::getBaseUrl(),
-        ]);
+            try {
+                $res = $this->client->request('GET', $this->endpoint, [
+                    'headers' => [
+                        'Accept' => 'application/json',
+                    ],
+                    'query' => [
+                        'api_key' => config('airlabs.api_key'),
+                        ...$this->queryAttributes,
+                    ],
+                ]);
+                $content = Json::decode($res->getBody()->getContents());
+                if (isset($content->error)) {
+                    $errorCode = $content->error->code ?? null;
+                    throw AirlabsException::writeError($errorCode);
+                }
+                $this->output = $content->response;
+                $this->handleCache();
 
-        try {
-            $res = $client->request('GET', $this->endpoint, [
-                'headers' => [
-                    'Accept' => 'application/json',
-                ],
-                'query' => [
-                    'api_key' => config('airlabs.api_key'),
-                    ...$this->queryAttributes,
-                ],
-            ]);
-            $content = Json::decode($res->getBody()->getContents());
-            if (isset($content->error)) {
-                throw new AirlabsException($content->error->code ?? null);
+                return $this->output;
+            } catch (GuzzleException $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-            $this->output = $content->response;
-            $this->handleCache();
-
-            return $this->output;
-        } catch (GuzzleException $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -121,5 +122,30 @@ class Airlabs
         if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
             Cache::put("airlabs.{$this->endpoint}", $this->output, config('airlabs.cache.lifetime'));
         }
+    }
+
+    /**
+     * Ping the airlabs api to check if all is ok
+     *
+     * @return bool returns `true` if all is good
+     * @throws AirlabsException
+     */
+    public function ping(): bool
+    {
+        $res = $this->client->request('GET', __FUNCTION__, [
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+            'query' => [
+                'api_key' => config('airlabs.api_key'),
+                ...$this->queryAttributes,
+            ],
+        ]);
+        $content = Json::decode($res->getBody()->getContents());
+        if (isset($content->error)) {
+            $errorCode = $content->error->code ?? null;
+            throw AirlabsException::writeError($errorCode);
+        }
+        return true;
     }
 }
