@@ -61,6 +61,7 @@ class Airlabs
                 $content = Json::decode($res->getBody()->getContents());
                 if (isset($content->error)) {
                     $errorCode = $content->error->code ?? null;
+
                     throw AirlabsException::writeError($errorCode);
                 }
                 $this->output = $content->response;
@@ -146,8 +147,10 @@ class Airlabs
         $content = Json::decode($res->getBody()->getContents());
         if (isset($content->error)) {
             $errorCode = $content->error->code ?? null;
+
             throw AirlabsException::writeError($errorCode);
         }
+
         return true;
     }
 }
