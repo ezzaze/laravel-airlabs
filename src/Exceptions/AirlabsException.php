@@ -4,7 +4,7 @@ namespace Ezzaze\Airlabs\Exceptions;
 
 use Exception;
 
-class AirlabsException extends Exception
+final class AirlabsException extends Exception
 {
     public static function writeError(string $errorCode): self
     {

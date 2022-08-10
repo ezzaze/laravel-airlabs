@@ -11,6 +11,7 @@ use Nette\Utils\Json;
 
 class Airlabs
 {
+    protected $client;
     protected string $endpoint;
     protected string $base_url;
     protected string $result;
@@ -72,6 +73,7 @@ class Airlabs
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
         }
+        return [];
     }
 
     /**
