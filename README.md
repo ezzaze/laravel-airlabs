@@ -1,6 +1,3 @@
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/support-ukraine.svg?t=1" />](https://supportukrainenow.org)
-
 # A PHP wrapper around the API of airlabs.co
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/ezzaze/airlabs.svg?style=flat-square)](https://packagist.org/packages/ezzaze/airlabs)
@@ -26,13 +23,6 @@ You can install the package via composer:
 composer require ezzaze/airlabs
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --tag="airlabs-migrations"
-php artisan migrate
-```
-
 You can publish the config file with:
 
 ```bash
@@ -52,19 +42,19 @@ return [
 ];
 ```
 
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="airlabs-views"
-```
-
 ## Usage
 
 ```php
-$airlabs = new Ezzaze\Airlabs();
-$airports = $airlabs->airports();
+use Ezzaze\Airlabs\Facades\Airlabs;
 
-$usaCities = $airlabs->cities(['country_code', 'US']);
+$airports = Airlabs::airports();
+
+$usaCities = Airlabs::cities(['country_code', 'US']);
+```
+
+You may bypass the SSL certificate peer verification for testing purposes with:
+```php
+$timezones = Airlabs::verifyPeer(false)->airports();
 ```
 
 ## Testing
