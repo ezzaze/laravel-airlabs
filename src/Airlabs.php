@@ -55,10 +55,10 @@ class Airlabs
                     'headers' => [
                         'Accept' => 'application/json',
                     ],
-                    'query' => [
-                        'api_key' => config('airlabs.api_key'),
-                        ...$this->queryAttributes,
-                    ],
+                    'query' => collect($this->queryAttributes)
+                        ->push(['api_key' => config('airlabs.api_key')])
+                        ->collapse()
+                        ->toArray(),
                 ]);
                 $content = Json::decode($res->getBody()->getContents());
                 if (isset($content->response)) {
