@@ -11,19 +11,21 @@ use Nette\Utils\Json;
 
 class Airlabs
 {
-    protected $client;
+    protected Client $client;
     protected string $endpoint;
     protected string $base_url;
     protected string $result;
     protected array $queryAttributes = [];
     protected array $output = [];
     protected bool $verifyPeer = true;
+    protected bool $cacheEnabled = false;
 
     public function __construct()
     {
         $this->client = new Client([
             'base_uri' => $this->getBaseUrl(),
         ]);
+        $this->cacheEnabled = filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL);
     }
 
     public function __call($name, $arguments = [])
@@ -43,9 +45,9 @@ class Airlabs
     private function getData(): array|JsonResponse
     {
         if ($this->ping()) {
-            if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
-                if ($content = Cache::get("airlabs.{$this->endpoint}")) {
-                    return $this->formatResult($content);
+            if ($this->cacheEnabled === true) {
+                if ($this->output = Cache::get("airlabs.{$this->endpoint}.{$this->serializeQueryAttributes()}", [])) {
+                    return $this->formatResult($this->output);
                 }
             }
 
@@ -65,7 +67,7 @@ class Airlabs
                     $this->output = $content->response;
                     $this->handleCache();
 
-                    return $this->output;
+                    return $this->formatResult($this->output);
                 }
 
                 throw AirlabsException::writeError($content->error);
@@ -124,8 +126,8 @@ class Airlabs
      */
     private function handleCache(): void
     {
-        if (filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL) === true) {
-            Cache::put("airlabs.{$this->endpoint}", $this->output, config('airlabs.cache.lifetime'));
+        if ($this->cacheEnabled === true) {
+            Cache::put("airlabs.{$this->endpoint}.{$this->serializeQueryAttributes()}", $this->output, config('airlabs.cache.lifetime'));
         }
     }
 
@@ -170,5 +172,19 @@ class Airlabs
         $this->verifyPeer = $value;
 
         return $this;
+    }
+
+    /**
+     * Serializing the query params received for caching purposes
+     *
+     * @return string
+     */
+    private function serializeQueryAttributes(): string
+    {
+        return md5(collect($this->queryAttributes)
+            ->collapse()
+            ->map(fn ($value) => strtolower($value))
+            ->sortKeys()
+            ->toJson());
     }
 }
