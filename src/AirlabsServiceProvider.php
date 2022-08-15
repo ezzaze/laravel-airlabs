@@ -2,7 +2,6 @@
 
 namespace Ezzaze\Airlabs;
 
-use Ezzaze\Airlabs\Commands\AirlabsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -25,6 +24,6 @@ class AirlabsServiceProvider extends PackageServiceProvider
 
     public function packageBooted()
     {
-        $this->app->singleton(Airlabs::class, fn () => new Airlabs());
+        $this->app->singleton('Airlabs', fn () => new Airlabs());
     }
 }

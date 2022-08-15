@@ -2,148 +2,83 @@
 
 namespace Ezzaze\Airlabs;
 
+use Ezzaze\Airlabs\Exceptions\AirlabsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Http\Response;
+use Illuminate\Http\{JsonResponse, Response};
+use Illuminate\Support\Facades\Cache;
 use Nette\Utils\Json;
 
 class Airlabs
 {
+    protected Client $client;
     protected string $endpoint;
     protected string $base_url;
+    protected string $result;
     protected array $queryAttributes = [];
+    protected array $output = [];
+    protected bool $verifyPeer = true;
+    protected bool $cacheEnabled = false;
 
     public function __construct()
     {
-        $this->base_url = $this->getBaseUrl();
-    }
-
-    /**
-     * query to retrieve the list of airports
-     *
-     * @return self
-     */
-    public function airports()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of flight schedules
-     *
-     * @return self
-     */
-    public function schedules()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of airlines
-     *
-     * @return self
-     */
-    public function airlines()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of cities
-     *
-     * @return self
-     */
-    public function cities()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of fleets
-     *
-     * @return self
-     */
-    public function fleets()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of routes
-     *
-     * @return self
-     */
-    public function routes()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * query to retrieve the list of timezones
-     *
-     * @return self
-     */
-    public function timezones()
-    {
-        $this->endpoint = __FUNCTION__;
-
-        return $this;
-    }
-
-    /**
-     * set query params to fetch data
-     *
-     * @param  array $attributes
-     * @return self
-     */
-    public function withQuery(array $attributes = [])
-    {
-        $this->queryAttributes = $attributes;
-
-        return $this;
-    }
-
-    /**
-     * get the results of the
-     *
-     * @return void
-     */
-    public function get()
-    {
-        $client = new Client([
-            'base_uri' => self::getBaseUrl(),
+        $this->client = new Client([
+            'base_uri' => $this->getBaseUrl(),
         ]);
+        $this->cacheEnabled = filter_var(config('airlabs.cache.enabled'), FILTER_VALIDATE_BOOL);
+    }
 
-        try {
-            $res = $client->request('GET', $this->endpoint, [
-                'headers' => [
-                    'Accept' => 'application/json',
-                ],
-                'query' => [
-                    'api_key' => config('airlabs.api_key'),
-                    ...$this->queryAttributes,
-                ],
-            ]);
-            $content = Json::decode($res->getBody()->getContents());
-            //TODO: throw custom exception in case of an error with status 200
-            return $content->response ?: $content->error->message;
-        } catch (GuzzleException $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    public function __call($name, $arguments = [])
+    {
+        $this->endpoint = $name;
+        $this->queryAttributes = $arguments;
+
+        return $this->getData();
+    }
+
+    /**
+     * get the results of the api call
+     *
+     * @return array|JsonResponse
+     * @throws AirlabsException
+     */
+    private function getData(): array|JsonResponse
+    {
+        if ($this->ping()) {
+            if ($this->cacheEnabled === true) {
+                if ($this->output = Cache::get("airlabs.{$this->endpoint}.{$this->serializeQueryAttributes()}", [])) {
+                    return $this->formatResult($this->output);
+                }
+            }
+
+            try {
+                $res = $this->client->request('GET', $this->endpoint, [
+                    'verify' => $this->verifyPeer,
+                    'headers' => [
+                        'Accept' => 'application/json',
+                    ],
+                    'query' => collect($this->queryAttributes)
+                        ->push(['api_key' => config('airlabs.api_key')])
+                        ->collapse()
+                        ->toArray(),
+                ]);
+                $content = Json::decode($res->getBody()->getContents());
+                if (isset($content->response)) {
+                    $this->output = $content->response;
+                    $this->handleCache();
+
+                    return $this->formatResult($this->output);
+                }
+
+                throw AirlabsException::writeError($content->error);
+            } catch (GuzzleException $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
         }
+
+        return [];
     }
 
     /**
@@ -165,6 +100,91 @@ class Airlabs
      */
     protected function getVersion(): string
     {
-        return "v" . config('airlabs.version');
+        return config('airlabs.version');
+    }
+
+    /**
+     * Format the result of the api
+     *
+     * @param  array $result
+     * @return array
+     */
+    private function formatResult(array $result): array
+    {
+        $collection = collect($result);
+        foreach (collect($this->queryAttributes)->collapse() as $name => $value) {
+            $collection = $collection->where($name, $value);
+        }
+
+        return $collection->values()->all();
+    }
+
+    /**
+     * Handle the caching of the api results if enabled
+     *
+     * @return void
+     */
+    private function handleCache(): void
+    {
+        if ($this->cacheEnabled === true) {
+            Cache::put("airlabs.{$this->endpoint}.{$this->serializeQueryAttributes()}", $this->output, config('airlabs.cache.lifetime'));
+        }
+    }
+
+    /**
+     * Ping the airlabs api to check if all is ok
+     *
+     * @return bool returns `true` if all is good
+     * @throws AirlabsException
+     */
+    public function ping(): bool
+    {
+        try {
+            $res = $this->client->request('GET', __FUNCTION__, [
+                'verify' => $this->verifyPeer,
+                'headers' => [
+                    'Accept' => 'application/json',
+                ],
+                'query' => [
+                    'api_key' => config('airlabs.api_key'),
+                    ...$this->queryAttributes,
+                ],
+            ]);
+            $content = Json::decode($res->getBody()->getContents());
+            if (isset($content->response)) {
+                return true;
+            }
+
+            throw AirlabsException::writeError($content->error);
+        } catch (GuzzleException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Set if SSL verification of the peer is necessary or not (this is insecure)
+     *
+     * @param  bool $value
+     * @return self
+     */
+    public function verifyPeer(bool $value = true): self
+    {
+        $this->verifyPeer = $value;
+
+        return $this;
+    }
+
+    /**
+     * Serializing the query params received for caching purposes
+     *
+     * @return string
+     */
+    private function serializeQueryAttributes(): string
+    {
+        return md5(collect($this->queryAttributes)
+            ->collapse()
+            ->map(fn ($value) => strtolower($value))
+            ->sortKeys()
+            ->toJson());
     }
 }
